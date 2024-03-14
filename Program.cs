@@ -8,13 +8,22 @@ class Program
 
         IDatabase db = redis.GetDatabase();
 
-        db.StringSet("keyA", "A");
-        db.StringSet("keyB", "B", TimeSpan.FromSeconds(2));
-        db.StringSet("keyC", "C", TimeSpan.FromSeconds(5));
+        db.Execute("FLUSHALL");
+
+        db.HashSet("bikes:1", new HashEntry[]
+        {
+            new HashEntry("model", "model1"),
+            new HashEntry("price", 1)
+        });
+        db.HashSet("bikes:2", new HashEntry[]
+        {
+            new HashEntry("model", "model1"),
+            new HashEntry("price", 2)
+        });
+        db.KeyExpire("bikes:1", TimeSpan.FromSeconds(1.5));
 
         Timer timer1 = new Timer(TimerCallback, db, 500, Timeout.Infinite);
         Timer timer2 = new Timer(TimerCallback, db, 2000, Timeout.Infinite);
-        Timer timer3 = new Timer(TimerCallback, db, 7000, Timeout.Infinite);
 
         ManualResetEvent resetEvent = new ManualResetEvent(false);
         resetEvent.WaitOne();
@@ -26,12 +35,16 @@ class Program
     {
         IDatabase db = (IDatabase)state;
 
-        string valueA = db.StringGet("keyA");
-        string valueB = db.StringGet("keyB");
-        string valueC = db.StringGet("keyC");
+        Console.WriteLine("<<<");
+        var bike1 = db.HashGetAll("bikes:1");
+        Console.WriteLine("(bikes:1)");
+        Console.WriteLine(string.Join("\n", bike1.Select(b => $"{b.Name}: {b.Value}")));
+        Console.WriteLine(">>>");
 
-        Console.WriteLine($"Value for keyA: {valueA}");
-        Console.WriteLine($"Value for keyB: {valueB}");
-        Console.WriteLine($"Value for keyC: {valueC}");
+        Console.WriteLine("<<<");
+        var bike2 = db.HashGetAll("bikes:2");
+        Console.WriteLine("(bikes:2)");
+        Console.WriteLine(string.Join("\n", bike2.Select(b => $"{b.Name}: {b.Value}")));
+        Console.WriteLine(">>>");
     }
 }
